@@ -1547,11 +1547,11 @@
         }
         .bottom-tab-btn {
             flex: 1;
-            padding: 8px 2px;
+            padding: 8px 0;
             border: none;
             background: white;
             color: #999;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s;
@@ -1559,13 +1559,19 @@
             flex-direction: column;
             align-items: center;
             gap: 2px;
+            min-width: 0;
+            overflow: hidden;
         }
         .bottom-tab-btn.active {
             color: #667eea;
             background: linear-gradient(to top, rgba(102,126,234,0.1), transparent);
         }
+        .bottom-tab-btn .bottom-tab-label {
+            font-size: 9px;
+            white-space: nowrap;
+        }
         .bottom-tab-icon {
-            font-size: 20px;
+            font-size: 22px;
         }
         .home-mrec-card {
             background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -3650,23 +3656,23 @@
             <div class="bottom-tab-nav">
                 <button class="bottom-tab-btn active" onclick="app.switchMainTab('home')">
                     <div class="bottom-tab-icon">🏠</div>
-                    <div>Home</div>
+                    <div class="bottom-tab-label">Home</div>
                 </button>
                 <button class="bottom-tab-btn" onclick="app.switchMainTab('saisie')">
                     <div class="bottom-tab-icon">📝</div>
-                    <div>Saisie</div>
+                    <div class="bottom-tab-label">Saisie</div>
                 </button>
                 <button class="bottom-tab-btn" onclick="app.switchMainTab('recap')">
                     <div class="bottom-tab-icon">📈</div>
-                    <div>Récap</div>
+                    <div class="bottom-tab-label">Récap</div>
                 </button>
                 <button class="bottom-tab-btn" onclick="app.switchMainTab('planning')">
                     <div class="bottom-tab-icon">📅</div>
-                    <div>Planning</div>
+                    <div class="bottom-tab-label">Planning</div>
                 </button>
                 <button class="bottom-tab-btn" onclick="app.switchMainTab('parametres')">
                     <div class="bottom-tab-icon">⚙️</div>
-                    <div>Paramètres</div>
+                    <div class="bottom-tab-label">Réglages</div>
                 </button>
             </div>
         </div>
