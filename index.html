@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <!-- ============================================================ -->
@@ -1546,25 +1547,25 @@
         }
         .bottom-tab-btn {
             flex: 1;
-            padding: 12px;
+            padding: 8px 2px;
             border: none;
             background: white;
             color: #999;
-            font-size: 13px;
+            font-size: 10px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 4px;
+            gap: 2px;
         }
         .bottom-tab-btn.active {
             color: #667eea;
             background: linear-gradient(to top, rgba(102,126,234,0.1), transparent);
         }
         .bottom-tab-icon {
-            font-size: 22px;
+            font-size: 20px;
         }
         .home-mrec-card {
             background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -2881,8 +2882,8 @@
                 </div>
             </div>
 
-            <!-- Navigation par onglets -->
-            <div class="tabs-nav">
+            <!-- Navigation par onglets (nascosta, navigazione ora in barra in basso) -->
+            <div class="tabs-nav" style="display:none">
                 <button class="tab-btn active" onclick="app.switchTab('saisie')">📝 Saisie</button>
                 <button class="tab-btn" onclick="app.switchTab('recap')">📈 Récapitulatif</button>
                 <button class="tab-btn" onclick="app.switchTab('planning')">📅 Planning</button>
@@ -3651,9 +3652,21 @@
                     <div class="bottom-tab-icon">🏠</div>
                     <div>Home</div>
                 </button>
-                <button class="bottom-tab-btn" onclick="app.switchMainTab('dashboard')">
-                    <div class="bottom-tab-icon">📊</div>
-                    <div>Dashboard</div>
+                <button class="bottom-tab-btn" onclick="app.switchMainTab('saisie')">
+                    <div class="bottom-tab-icon">📝</div>
+                    <div>Saisie</div>
+                </button>
+                <button class="bottom-tab-btn" onclick="app.switchMainTab('recap')">
+                    <div class="bottom-tab-icon">📈</div>
+                    <div>Récap</div>
+                </button>
+                <button class="bottom-tab-btn" onclick="app.switchMainTab('planning')">
+                    <div class="bottom-tab-icon">📅</div>
+                    <div>Planning</div>
+                </button>
+                <button class="bottom-tab-btn" onclick="app.switchMainTab('parametres')">
+                    <div class="bottom-tab-icon">⚙️</div>
+                    <div>Paramètres</div>
                 </button>
             </div>
         </div>
@@ -3717,13 +3730,7 @@
                         
                         // Ripristina la pagina attiva prima del reload
                         const savedMainTab = localStorage.getItem(LS_PREFIX + 'active_main_tab') || 'home';
-                        const savedTab     = localStorage.getItem(LS_PREFIX + 'active_tab') || 'saisie';
-                        if (savedMainTab === 'dashboard') {
-                            this.switchMainTab('dashboard');
-                            this.switchTab(savedTab);
-                        } else {
-                            this.switchMainTab('home');
-                        }
+                        this.switchMainTab(savedMainTab);
                         return;
                     }
 
@@ -4503,16 +4510,19 @@
                         return;
                     }
 
+                    // Pulisci credenziali vecchie prima di registrare
+                    localStorage.removeItem(LS_PREFIX + 'biometric_credential_id');
+
                     const userId = new Uint8Array(16);
                     crypto.getRandomValues(userId);
                     
                     const credential = await navigator.credentials.create({
                         publicKey: {
                             challenge: crypto.getRandomValues(new Uint8Array(32)),
-                            rp: { name: 'Fiche de Paie', id: location.hostname || 'localhost' },
+                            rp: { name: 'Fiche de Paie', id: 'fichedepaie.github.io' },
                             user: {
                                 id: userId,
-                                name: localStorage.getItem(LS_PREFIX + 'user_email') || 'user',
+                                name: localStorage.getItem(LS_PREFIX + 'user_email') || 'user@paie.app',
                                 displayName: localStorage.getItem(LS_PREFIX + 'user_firstname') || 'Utilisateur'
                             },
                             pubKeyCredParams: [
@@ -4521,7 +4531,8 @@
                             ],
                             authenticatorSelection: {
                                 authenticatorAttachment: 'platform',
-                                userVerification: 'required'
+                                userVerification: 'required',
+                                residentKey: 'discouraged'
                             },
                             timeout: 60000
                         }
@@ -4530,15 +4541,23 @@
                     // Salva l'ID della credenziale
                     const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
                     localStorage.setItem(LS_PREFIX + 'biometric_credential_id', credId);
+                    // Salva anche la password attuale per uso biometrico
+                    if (this.currentPassword) {
+                        localStorage.setItem(LS_PREFIX + 'biometric_password', this.currentPassword);
+                    }
                     
                     this.showToast('✅ Empreinte enregistrée avec succès !', 'success');
                     await this.initBiometric();
                     
                 } catch (err) {
                     if (err.name === 'NotAllowedError') {
-                        this.showToast('❌ Enregistrement annulé', 'error');
+                        this.showToast('❌ Enregistrement annulé — réessayez', 'error');
+                    } else if (err.name === 'InvalidStateError') {
+                        this.showToast('❌ Empreinte déjà enregistrée — supprimez-la d\'abord', 'error');
+                    } else if (err.name === 'NotSupportedError') {
+                        this.showToast('❌ Non supporté sur cet appareil', 'error');
                     } else {
-                        this.showToast('❌ Erreur: ' + err.message, 'error');
+                        this.showToast('❌ Erreur: ' + err.name + ' - ' + err.message, 'error');
                     }
                 }
             },
@@ -4553,6 +4572,7 @@
                     const assertion = await navigator.credentials.get({
                         publicKey: {
                             challenge: crypto.getRandomValues(new Uint8Array(32)),
+                            rpId: 'fichedepaie.github.io',
                             allowCredentials: [{
                                 id: credIdBytes,
                                 type: 'public-key',
@@ -5500,10 +5520,8 @@
                 // Chiudi menu
                 const menu = document.getElementById('home-menu');
                 if (menu) menu.style.display = 'none';
-                // Prima vai al dashboard se siamo nella Home
-                this.switchMainTab('dashboard');
-                // Poi vai al tab Planning
-                setTimeout(() => this.switchTab('planning'), 100);
+                // Vai direttamente al tab Planning
+                this.switchMainTab('planning');
                 // Apri sezione Notes
                 setTimeout(() => {
                     const content = document.getElementById('content-notes');
@@ -5686,10 +5704,10 @@
                 this.handleWorkTypeChange();
                 this.updateHoursPreview();
 
-                // 2. Aller sur la page dashboard si on est sur HOME
+                // 2. Aller sur la page saisie si on est sur HOME
                 const homePage = document.getElementById('main-page-home');
                 if (homePage && homePage.classList.contains('active')) {
-                    this.switchMainTab('dashboard');
+                    this.switchMainTab('saisie');
                 }
 
                 // 3. Aller sur le tab Saisie
@@ -6519,8 +6537,8 @@
                 // Chiudi il menu home se aperto
                 const menu = document.getElementById('home-menu');
                 if (menu) menu.style.display = 'none';
-                // Vai al Dashboard
-                this.switchMainTab('dashboard');
+                // Vai al tab Paramètres
+                this.switchMainTab('parametres');
                 setTimeout(() => {
                     // Vai al tab Paramètres
                     this.switchTab('parametres');
@@ -8059,27 +8077,34 @@ ${pages.join('\n')}
             // ============================================
             
             switchMainTab(tab) {
+                // Mappa tab -> indice bottone nella barra
+                const tabOrder = ['home', 'saisie', 'recap', 'planning', 'parametres'];
+                // Se arriva 'dashboard' redirect a saisie (compatibilità)
+                if (tab === 'dashboard') tab = 'saisie';
+
                 // Salva la pagina attiva per ripristinarla dopo reload
                 localStorage.setItem(LS_PREFIX + 'active_main_tab', tab);
+
                 // Update bottom tab buttons
                 const buttons = document.querySelectorAll('.bottom-tab-btn');
                 buttons.forEach((btn, idx) => {
                     btn.classList.remove('active');
-                    if ((tab === 'home' && idx === 0) || (tab === 'dashboard' && idx === 1)) {
-                        btn.classList.add('active');
-                    }
+                    if (idx === tabOrder.indexOf(tab)) btn.classList.add('active');
                 });
 
-                // Switch pages
+                // Nascondi tutte le pagine principali
                 document.getElementById('main-page-home').classList.remove('active');
                 document.getElementById('main-page-dashboard').classList.remove('active');
-                document.getElementById('main-page-' + tab).classList.add('active');
 
-                // If switching to home, update displays
                 if (tab === 'home') {
+                    document.getElementById('main-page-home').classList.add('active');
                     this.updateHomeDisplay();
                     this.updateHomeDate();
                     this.loadHomeRecentEntries();
+                } else {
+                    // Mostra dashboard e attiva il tab corrispondente
+                    document.getElementById('main-page-dashboard').classList.add('active');
+                    this.switchTab(tab);
                 }
             },
 
@@ -8227,8 +8252,8 @@ ${pages.join('\n')}
                 const menu = document.getElementById('home-menu');
                 if (menu) menu.style.display = 'none';
                 
-                // 2. Vai alla pagina Dashboard (se siamo su Home)
-                this.switchMainTab('dashboard');
+                // 2. Vai alla pagina Récapitulatif
+                this.switchMainTab('recap');
                 
                 // 3. Vai al tab Récapitulatif
                 this.switchTab('recap');
@@ -8857,35 +8882,19 @@ ${pages.join('\n')}
                 const homePage = document.getElementById('main-page-home');
                 const isOnHome = homePage && homePage.classList.contains('active');
 
-                if (isOnHome && isSwipeLeft) {
-                    // Home → Dashboard
-                    app.switchMainTab('dashboard');
-                    return;
-                }
-                if (!isOnHome && isSwipeRight) {
-                    // Dashboard → Home (solo se siamo sul primo tab)
-                    const activeTabs = document.querySelectorAll('.tab-content.active');
-                    if (activeTabs.length > 0) {
-                        const activeTabId = activeTabs[0].id;
-                        if (activeTabId === 'tab-saisie') {
-                            app.switchMainTab('home');
-                            return;
-                        }
-                    }
-                }
+                // Swipe naviga tra i 5 tab principali
+                const mainTabOrder = ['home', 'saisie', 'recap', 'planning', 'parametres'];
+                const currentMainTab = isOnHome ? 'home' : (() => {
+                    const activeTabEl = document.querySelector('.tab-content.active');
+                    if (!activeTabEl) return 'saisie';
+                    return activeTabEl.id.replace('tab-', '');
+                })();
+                const currentMainIdx = mainTabOrder.indexOf(currentMainTab);
 
-                // Tab interni del Dashboard (Saisie → Recap → Planning → Paramètres)
-                const tabOrder = ['saisie', 'recap', 'planning', 'parametres'];
-                const activeTabEl = document.querySelector('.tab-content.active');
-                if (!activeTabEl) return;
-                const currentTab = activeTabEl.id.replace('tab-', '');
-                const currentIdx = tabOrder.indexOf(currentTab);
-                if (currentIdx === -1) return;
-
-                if (isSwipeLeft && currentIdx < tabOrder.length - 1) {
-                    app.switchTab(tabOrder[currentIdx + 1]);
-                } else if (isSwipeRight && currentIdx > 0) {
-                    app.switchTab(tabOrder[currentIdx - 1]);
+                if (isSwipeLeft && currentMainIdx < mainTabOrder.length - 1) {
+                    app.switchMainTab(mainTabOrder[currentMainIdx + 1]);
+                } else if (isSwipeRight && currentMainIdx > 0) {
+                    app.switchMainTab(mainTabOrder[currentMainIdx - 1]);
                 }
             }
         })();
