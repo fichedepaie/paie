@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.fichedepaie.twa",
+        "sha256_cert_fingerprints": ["B9:75:38:55:97:F8:8E:6D:74:E5:7E:89:AB:93:B6:47:D3:15:E6:5A:03:81:C4:00:1F:7F:02:D8:D9:CA:36:C0"]
+      }
+    }]
