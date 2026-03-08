@@ -8586,7 +8586,7 @@ ${pages.join('\n')}
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 const recognition = new SpeechRecognition();
-                recognition.lang = 'mul'; // multi-language — browser détecte automatiquement
+                recognition.lang = navigator.language || 'fr-FR'; // langue du téléphone
                 recognition.interimResults = false;
                 recognition.maxAlternatives = 1;
                 this._voiceRecognition = recognition;
