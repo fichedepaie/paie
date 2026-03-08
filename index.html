@@ -8586,7 +8586,8 @@ ${pages.join('\n')}
 
                 // Richiedi permesso microfono esplicitamente
                 try {
-                    await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(track => track.stop()); // libera subito il mic
                 } catch(permErr) {
                     this.showVoiceError('🚫 Microphone refusé. Autorisez le micro dans Paramètres → Apps → Paie → Autorisations → Microphone.');
                     return;
